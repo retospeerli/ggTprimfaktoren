@@ -47,9 +47,9 @@
 <div class="explanation">
   <h2>So bestimmst du den ggT:</h2>
   <ol>
-    <li>Zerlege beide Zahlen in Primfaktoren.</li>
-    <li>Nimm nur die Primfaktoren, die in <strong>beiden Zahlen vorkommen</strong>.</li>
-    <li>Und zwar so oft, wie sie in der <strong>kleineren Häufigkeit</strong> vorkommen.</li>
+    <li>Zerlege beide Zahlen in <strong>Primfaktoren</strong>.</li>
+    <li>Schau, welche Primzahlen in <strong>beiden</strong> Zerlegungen vorkommen.</li>
+    <li>Nimm jede gemeinsame Primzahl so oft, wie sie in der <strong>kleineren Häufigkeit</strong> vorkommt.</li>
     <li>Multipliziere diese Faktoren → das ist der <strong>ggT</strong>.</li>
   </ol>
 
@@ -66,8 +66,9 @@
   👉 ggT(12, 18) = 2 · 3 = <strong>6</strong><br><br>
 
   <strong>Bei der Aufgabe unten:</strong><br>
-  ➜ Zerlege A und B in Primfaktoren (Reihenfolge egal)<br>
-  ➜ Trage den ggT unten ein und klicke „Überprüfen“
+  ➜ Zerlege A und B vollständig in Primfaktoren (z.&nbsp;B. 50 = 2 · 5 · 5).<br>
+  ➜ Trage alle Primfaktoren (Reihenfolge egal) in die Felder ein.<br>
+  ➜ Unten gibst du den ggT(A, B) ein und klickst „Überprüfen“.
 </div>
 
 <div class="labels"><div>Zahl A</div><div>Zahl B</div></div>
@@ -97,109 +98,146 @@
 const FIELDS = 10;
 let a, b, apf, bpf, ggtVal;
 
-const aEl=document.getElementById("a");
-const bEl=document.getElementById("b");
-const rowA=document.getElementById("rowA");
-const rowB=document.getElementById("rowB");
-const ggtIn=document.getElementById("ggt");
-const fb=document.getElementById("feedback");
+const aEl = document.getElementById("a");
+const bEl = document.getElementById("b");
+const rowA = document.getElementById("rowA");
+const rowB = document.getElementById("rowB");
+const ggtIn = document.getElementById("ggt");
+const fb = document.getElementById("feedback");
 
-function gcd(x,y){return y?gcd(y,x%y):x;}
-function isPrime(n){for(let i=2;i*i<=n;i++) if(n%i===0)return false;return n>1;}
-function pf(n){const r=[];let d=2;while(n>1){while(n%d===0){r.push(d);n/=d;}d++;}return r;}
-
-function newTask(){
-  do{
-    a=Math.floor(Math.random()*68)+12;
-    b=Math.floor(Math.random()*68)+12;
-  }while(a===b || isPrime(a) || isPrime(b));
-  apf=pf(a); bpf=pf(b);
-  ggtVal=gcd(a,b);
-  fill();
+function gcd(x, y) {
+  return y ? gcd(y, x % y) : x;
 }
 
-function fill(){
-  aEl.textContent=a;
-  bEl.textContent=b;
-  fb.textContent="";
-  fb.className="feedback";
-  ggtIn.value="";
-
-  build(rowA); build(rowB);
-}
-
-function build(container){
-  container.innerHTML="";
-  for(let i=0;i<FIELDS;i++){
-    const x=document.createElement("input");
-    x.className="pf-input";
-    container.appendChild(x);
+function isPrime(n) {
+  if (n < 2) return false;
+  for (let i = 2; i * i <= n; i++) {
+    if (n % i === 0) return false;
   }
+  return true;
 }
 
-function checkRow(container, corr){
-  const c = count(corr);
-  const inp=[...container.children];
-  const vals=[];
-
-  inp.forEach(i=>{
-    i.classList.remove("correct","incorrect");
-    const v=parseInt(i.value);
-    if(!isNaN(v)) vals.push(v);
-  });
-
-  const cu=count(vals);
-  let ok=true;
-  for(const [k,v] of c){
-    if(cu.get(k)!==v) ok=false;
-  }
-
-  inp.forEach(i=>{
-    const v=parseInt(i.value);
-    if(!isNaN(v)){
-      if(corr.includes(v)) i.classList.add("correct");
-      else i.classList.add("incorrect");
+function primeFactors(n) {
+  const r = [];
+  let d = 2;
+  while (n > 1) {
+    while (n % d === 0) {
+      r.push(d);
+      n /= d;
     }
-  });
-  return ok;
+    d++;
+  }
+  return r;
 }
 
-function count(arr){
-  const m=new Map();
-  arr.forEach(v=>m.set(v,(m.get(v)||0)+1));
+function newTask() {
+  // Zahlenbereich 12–80, keine Primzahlen, und nicht gleich
+  do {
+    a = Math.floor(Math.random() * 69) + 12; // 12..80
+    b = Math.floor(Math.random() * 69) + 12;
+  } while (a === b || isPrime(a) || isPrime(b));
+
+  apf = primeFactors(a);
+  bpf = primeFactors(b);
+  ggtVal = gcd(a, b);
+
+  aEl.textContent = a;
+  bEl.textContent = b;
+  fb.textContent = "";
+  fb.className = "feedback";
+  ggtIn.value = "";
+  ggtIn.classList.remove("correct", "incorrect");
+
+  buildRow(rowA);
+  buildRow(rowB);
+}
+
+function buildRow(container) {
+  container.innerHTML = "";
+  for (let i = 0; i < FIELDS; i++) {
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.className = "pf-input";
+    container.appendChild(inp);
+  }
+}
+
+function countValues(arr) {
+  const m = new Map();
+  for (const v of arr) {
+    m.set(v, (m.get(v) || 0) + 1);
+  }
   return m;
 }
 
-function check(){
-  const okA=checkRow(rowA,common(apf,bpf));
-  const okB=checkRow(rowB,common(bpf,apf));
-  const g=parseInt(ggtIn.value);
-  const okG=g===ggtVal;
+function checkRow(container, correctFactors) {
+  const correctCount = countValues(correctFactors);
+  const inputs = Array.from(container.children);
+  const userValues = [];
 
-  ggtIn.classList.remove("correct","incorrect");
-  ggtIn.classList.add(okG?"correct":"incorrect");
+  // einsammeln
+  inputs.forEach(inp => {
+    inp.classList.remove("correct", "incorrect");
+    const v = parseInt(inp.value, 10);
+    if (!isNaN(v)) {
+      userValues.push(v);
+    }
+  });
 
-  if(okA && okB && okG){
-    fb.textContent="Super! Alles korrekt! 🎉";
-    fb.className="feedback ok";
-  }else{
-    fb.textContent="Noch Fehler – schau nochmals die gemeinsamen Faktoren an!";
-    fb.className="feedback err";
+  const userCount = countValues(userValues);
+  let ok = true;
+
+  // 1. Jede erwartete Primzahl muss mit richtiger Häufigkeit vorkommen
+  for (const [p, c] of correctCount.entries()) {
+    if (userCount.get(p) !== c) {
+      ok = false;
+    }
+  }
+
+  // 2. Es dürfen keine zusätzlichen Primzahlen vorkommen
+  for (const [p, c] of userCount.entries()) {
+    if (!correctCount.has(p)) {
+      ok = false;
+    }
+  }
+
+  // Markierung der einzelnen Felder
+  inputs.forEach(inp => {
+    const v = parseInt(inp.value, 10);
+    if (!isNaN(v)) {
+      if (correctFactors.includes(v)) {
+        inp.classList.add("correct");
+      } else {
+        inp.classList.add("incorrect");
+      }
+    }
+  });
+
+  return ok;
+}
+
+function check() {
+  const okA = checkRow(rowA, apf);
+  const okB = checkRow(rowB, bpf);
+
+  const g = parseInt(ggtIn.value, 10);
+  const okG = (g === ggtVal);
+
+  ggtIn.classList.remove("correct", "incorrect");
+  ggtIn.classList.add(okG ? "correct" : "incorrect");
+
+  if (okA && okB && okG) {
+    fb.textContent = "Super! Zerlegungen und ggT sind korrekt. 🎉";
+    fb.className = "feedback ok";
+  } else {
+    fb.textContent = "Noch nicht ganz richtig. Prüfe deine Primfaktoren und den ggT.";
+    fb.className = "feedback err";
   }
 }
 
-function common(f1,f2){
-  const a=f1.slice(), b=f2.slice(), com=[];
-  for(let i=a.length-1;i>=0;i--){
-    const p=a[i];
-    const idx=b.indexOf(p);
-    if(idx>=0){ com.push(p); b.splice(idx,1); }
-  }
-  return com;
-}
+document.getElementById("check").addEventListener("click", check);
+document.getElementById("new").addEventListener("click", newTask);
 
-document.getElementById("check").onclick=check;
-document.getElementById("new").onclick=newTask;
 newTask();
 </script>
 
