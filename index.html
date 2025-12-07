@@ -29,10 +29,19 @@
   .ggt-row { text-align:center; margin-top:.8rem; }
   .ggt-input { width:6rem; height:2.8rem; font-size:1.4rem; font-weight:700; text-align:center; border-radius:10px; border:2px solid #d1d5db; background:#f9fafb;}
 
-  .btns { display:flex; justify-content:center; gap:.5rem; margin-top:.8rem; }
-  .btn { padding:.5rem 1rem; border-radius:999px; border:1px solid #d1d5db; background:#f9fafb; cursor:pointer; font-weight:600; }
+  .btns { display:flex; justify-content:center; gap:.5rem; margin-top:.8rem; flex-wrap: wrap; }
+  .btn { padding:.5rem 1rem; border-radius:999px; border:1px solid #d1d5db; background:#f9fafb; cursor:pointer; font-weight:600; font-size:0.95rem; }
   .btn.primary { background:#2563eb; border-color:#1d4ed8; color:#fff; }
   .btn.primary:hover { background:#1d4ed8; }
+  .btn.toggle-active {
+    background:#f97316;
+    border-color:#ea580c;
+    color:#fff;
+  }
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 
   .feedback { text-align:center; font-weight:600; min-height:1.3rem; margin-top:.6rem; font-size:.95rem; }
   .ok { color:#15803d; }
@@ -65,10 +74,12 @@
 
   👉 ggT(12, 18) = 2 · 3 = <strong>6</strong><br><br>
 
-  <strong>Bei der Aufgabe unten:</strong><br>
-  ➜ Zerlege A und B vollständig in Primfaktoren (z.&nbsp;B. 50 = 2 · 5 · 5).<br>
-  ➜ Trage alle Primfaktoren (Reihenfolge egal) in die Felder ein.<br>
-  ➜ Unten gibst du den ggT(A, B) ein und klickst „Überprüfen“.
+  <strong>In dieser Übung:</strong><br>
+  • Zerlege A und B vollständig in Primfaktoren (z.&nbsp;B. 50 = 2 · 5 · 5).<br>
+  • Trage alle Primfaktoren (Reihenfolge egal) in die Felder ein.<br>
+  • Unten gibst du den ggT(A, B) ein.<br>
+  • <strong>Falls A und B teilerfremd sind (ggT = 1):</strong><br>
+  &nbsp;&nbsp;→ klicke auf <strong>„Teilerfremd!“</strong> und lass das ggT-Feld leer oder schreibe 1 hinein.
 </div>
 
 <div class="labels"><div>Zahl A</div><div>Zahl B</div></div>
@@ -88,6 +99,7 @@
 <div class="btns">
   <button id="check" class="btn primary">Überprüfen</button>
   <button id="new" class="btn">Neue Zahlen</button>
+  <button id="coprime" class="btn">Teilerfremd!</button>
 </div>
 
 <div id="feedback" class="feedback"></div>
@@ -97,6 +109,7 @@
 <script>
 const FIELDS = 10;
 let a, b, apf, bpf, ggtVal;
+let coprimeSelected = false;
 
 const aEl = document.getElementById("a");
 const bEl = document.getElementById("b");
@@ -104,6 +117,7 @@ const rowA = document.getElementById("rowA");
 const rowB = document.getElementById("rowB");
 const ggtIn = document.getElementById("ggt");
 const fb = document.getElementById("feedback");
+const coprimeBtn = document.getElementById("coprime");
 
 function gcd(x, y) {
   return y ? gcd(y, x % y) : x;
@@ -130,6 +144,11 @@ function primeFactors(n) {
   return r;
 }
 
+function resetCoprimeButton() {
+  coprimeSelected = false;
+  coprimeBtn.classList.remove("toggle-active");
+}
+
 function newTask() {
   // Zahlenbereich 12–80, keine Primzahlen, und nicht gleich
   do {
@@ -150,6 +169,10 @@ function newTask() {
 
   buildRow(rowA);
   buildRow(rowB);
+
+  // Teilerfremd-Button konfigurieren
+  resetCoprimeButton();
+  coprimeBtn.disabled = (ggtVal !== 1);
 }
 
 function buildRow(container) {
@@ -220,23 +243,54 @@ function check() {
   const okA = checkRow(rowA, apf);
   const okB = checkRow(rowB, bpf);
 
-  const g = parseInt(ggtIn.value, 10);
-  const okG = (g === ggtVal);
-
+  let okG = true;
   ggtIn.classList.remove("correct", "incorrect");
+
+  if (ggtVal === 1) {
+    // Muss als teilerfremd markiert sein
+    if (!coprimeSelected) {
+      okG = false;
+    }
+
+    const raw = ggtIn.value.trim();
+    if (raw === "") {
+      // leeres Feld ist erlaubt, wird als "1" interpretiert
+    } else {
+      const g = parseInt(raw, 10);
+      if (isNaN(g) || g !== 1) {
+        okG = false;
+      }
+    }
+  } else {
+    // ggT > 1: Teilerfremd-Button darf NICHT gesetzt sein
+    if (coprimeSelected) {
+      okG = false;
+    }
+    const g = parseInt(ggtIn.value, 10);
+    if (isNaN(g) || g !== ggtVal) {
+      okG = false;
+    }
+  }
+
   ggtIn.classList.add(okG ? "correct" : "incorrect");
 
   if (okA && okB && okG) {
     fb.textContent = "Super! Zerlegungen und ggT sind korrekt. 🎉";
     fb.className = "feedback ok";
   } else {
-    fb.textContent = "Noch nicht ganz richtig. Prüfe deine Primfaktoren und den ggT.";
+    fb.textContent = "Noch nicht ganz richtig. Prüfe deine Primfaktoren und ob Teilerfremd richtig markiert ist.";
     fb.className = "feedback err";
   }
 }
 
+// Button-Events
 document.getElementById("check").addEventListener("click", check);
 document.getElementById("new").addEventListener("click", newTask);
+coprimeBtn.addEventListener("click", () => {
+  if (coprimeBtn.disabled) return;
+  coprimeSelected = !coprimeSelected;
+  coprimeBtn.classList.toggle("toggle-active", coprimeSelected);
+});
 
 newTask();
 </script>
