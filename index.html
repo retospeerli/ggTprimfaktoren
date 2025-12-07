@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<title>ggT über Primfaktoren – 6. Klasse</title>
+<style>
+  :root { font-family: system-ui; background: #f3f4f6; }
+  body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  .app { background: #fff; padding: 2rem 2.2rem; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 840px; box-sizing: border-box; }
+  h1 { text-align: center; font-size: 1.4rem; margin-top: 0; }
+
+  .explanation { background: #f9fafb; border-radius: 12px; padding: 1rem; border: 1px solid #e5e7eb; font-size: 0.9rem; margin-bottom: 1rem; }
+  .explanation h2 { font-size: 1rem; margin: 0 0 .4rem; }
+  ol { margin-top: .3rem; line-height: 1.4; }
+  strong { color: #111; }
+
+  .ex-table { margin: .4rem 0; border-collapse: collapse; }
+  .ex-table th, .ex-table td { border: 1px solid #d1d5db; padding: .25rem .5rem; text-align:center; font-size:.85rem; }
+  .ex-table th { background: #e5e7eb; }
+
+  .numbers { display:flex; justify-content:center; gap:3rem; font-size:2.1rem; font-weight:700; margin-bottom:.2rem; }
+  .labels { display:flex; justify-content:center; gap:3rem; font-size:.9rem; color:#555; margin-bottom:.3rem; }
+
+  .row { display:flex; justify-content:center; flex-wrap:wrap; gap:.3rem; margin-bottom:.5rem; }
+  .pf-input { width:2.4rem; height:2.4rem; font-size:1.1rem; text-align:center; border-radius:10px; border:2px solid #d1d5db; background:#f9fafb; }
+  .correct { background:#dcfce7; border-color:#16a34a; }
+  .incorrect { background:#fee2e2; border-color:#b91c1c; }
+
+  .ggt-row { text-align:center; margin-top:.8rem; }
+  .ggt-input { width:6rem; height:2.8rem; font-size:1.4rem; font-weight:700; text-align:center; border-radius:10px; border:2px solid #d1d5db; background:#f9fafb;}
+
+  .btns { display:flex; justify-content:center; gap:.5rem; margin-top:.8rem; }
+  .btn { padding:.5rem 1rem; border-radius:999px; border:1px solid #d1d5db; background:#f9fafb; cursor:pointer; font-weight:600; }
+  .btn.primary { background:#2563eb; border-color:#1d4ed8; color:#fff; }
+  .btn.primary:hover { background:#1d4ed8; }
+
+  .feedback { text-align:center; font-weight:600; min-height:1.3rem; margin-top:.6rem; font-size:.95rem; }
+  .ok { color:#15803d; }
+  .err { color:#b91c1c; }
+</style>
+</head>
+<body>
+
+<div class="app">
+<h1>ggT mit der Primfaktorzerlegung bestimmen</h1>
+
+<div class="explanation">
+  <h2>So bestimmst du den ggT:</h2>
+  <ol>
+    <li>Zerlege beide Zahlen in Primfaktoren.</li>
+    <li>Nimm nur die Primfaktoren, die in <strong>beiden Zahlen vorkommen</strong>.</li>
+    <li>Und zwar so oft, wie sie in der <strong>kleineren Häufigkeit</strong> vorkommen.</li>
+    <li>Multipliziere diese Faktoren → das ist der <strong>ggT</strong>.</li>
+  </ol>
+
+  <strong>Beispiel: 12 und 18</strong><br><br>
+  12 = 2 · 2 · 3<br>
+  18 = 2 · 3 · 3<br><br>
+
+  <table class="ex-table">
+    <tr><th>Primzahl</th><th>in 12</th><th>in 18</th><th>wir nehmen</th></tr>
+    <tr><td>2</td><td>2×</td><td>1×</td><td><strong>1×</strong></td></tr>
+    <tr><td>3</td><td>1×</td><td>2×</td><td><strong>1×</strong></td></tr>
+  </table>
+
+  👉 ggT(12, 18) = 2 · 3 = <strong>6</strong><br><br>
+
+  <strong>Bei der Aufgabe unten:</strong><br>
+  ➜ Zerlege A und B in Primfaktoren (Reihenfolge egal)<br>
+  ➜ Trage den ggT unten ein und klicke „Überprüfen“
+</div>
+
+<div class="labels"><div>Zahl A</div><div>Zahl B</div></div>
+<div class="numbers"><div id="a"></div><div id="b"></div></div>
+
+<div><strong>Primfaktoren von A:</strong></div>
+<div class="row" id="rowA"></div>
+
+<div><strong>Primfaktoren von B:</strong></div>
+<div class="row" id="rowB"></div>
+
+<div class="ggt-row">
+  <strong>ggT(A,B) = </strong>
+  <input id="ggt" class="ggt-input">
+</div>
+
+<div class="btns">
+  <button id="check" class="btn primary">Überprüfen</button>
+  <button id="new" class="btn">Neue Zahlen</button>
+</div>
+
+<div id="feedback" class="feedback"></div>
+
+</div>
+
+<script>
+const FIELDS = 10;
+let a, b, apf, bpf, ggtVal;
+
+const aEl=document.getElementById("a");
+const bEl=document.getElementById("b");
+const rowA=document.getElementById("rowA");
+const rowB=document.getElementById("rowB");
+const ggtIn=document.getElementById("ggt");
+const fb=document.getElementById("feedback");
+
+function gcd(x,y){return y?gcd(y,x%y):x;}
+function isPrime(n){for(let i=2;i*i<=n;i++) if(n%i===0)return false;return n>1;}
+function pf(n){const r=[];let d=2;while(n>1){while(n%d===0){r.push(d);n/=d;}d++;}return r;}
+
+function newTask(){
+  do{
+    a=Math.floor(Math.random()*68)+12;
+    b=Math.floor(Math.random()*68)+12;
+  }while(a===b || isPrime(a) || isPrime(b));
+  apf=pf(a); bpf=pf(b);
+  ggtVal=gcd(a,b);
+  fill();
+}
+
+function fill(){
+  aEl.textContent=a;
+  bEl.textContent=b;
+  fb.textContent="";
+  fb.className="feedback";
+  ggtIn.value="";
+
+  build(rowA); build(rowB);
+}
+
+function build(container){
+  container.innerHTML="";
+  for(let i=0;i<FIELDS;i++){
+    const x=document.createElement("input");
+    x.className="pf-input";
+    container.appendChild(x);
+  }
+}
+
+function checkRow(container, corr){
+  const c = count(corr);
+  const inp=[...container.children];
+  const vals=[];
+
+  inp.forEach(i=>{
+    i.classList.remove("correct","incorrect");
+    const v=parseInt(i.value);
+    if(!isNaN(v)) vals.push(v);
+  });
+
+  const cu=count(vals);
+  let ok=true;
+  for(const [k,v] of c){
+    if(cu.get(k)!==v) ok=false;
+  }
+
+  inp.forEach(i=>{
+    const v=parseInt(i.value);
+    if(!isNaN(v)){
+      if(corr.includes(v)) i.classList.add("correct");
+      else i.classList.add("incorrect");
+    }
+  });
+  return ok;
+}
+
+function count(arr){
+  const m=new Map();
+  arr.forEach(v=>m.set(v,(m.get(v)||0)+1));
+  return m;
+}
+
+function check(){
+  const okA=checkRow(rowA,common(apf,bpf));
+  const okB=checkRow(rowB,common(bpf,apf));
+  const g=parseInt(ggtIn.value);
+  const okG=g===ggtVal;
+
+  ggtIn.classList.remove("correct","incorrect");
+  ggtIn.classList.add(okG?"correct":"incorrect");
+
+  if(okA && okB && okG){
+    fb.textContent="Super! Alles korrekt! 🎉";
+    fb.className="feedback ok";
+  }else{
+    fb.textContent="Noch Fehler – schau nochmals die gemeinsamen Faktoren an!";
+    fb.className="feedback err";
+  }
+}
+
+function common(f1,f2){
+  const a=f1.slice(), b=f2.slice(), com=[];
+  for(let i=a.length-1;i>=0;i--){
+    const p=a[i];
+    const idx=b.indexOf(p);
+    if(idx>=0){ com.push(p); b.splice(idx,1); }
+  }
+  return com;
+}
+
+document.getElementById("check").onclick=check;
+document.getElementById("new").onclick=newTask;
+newTask();
+</script>
+
+</body>
+</html>
